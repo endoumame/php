@@ -1,0 +1,67 @@
+name: PHP Bulk Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      minimum_version:
+        description: Release versions greater than or equal to this version
+        required: true
+        default: 0.0.0
+        type: string
+      max_count:
+        description: Maximum number of versions to release in one run
+        required: true
+        default: "10"
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: php-bulk-release
+  cancel-in-progress: false
+
+jobs:
+  list-versions:
+    name: List PHP versions
+    runs-on: ubuntu-24.04
+    outputs:
+      versions: ${{ steps.versions.outputs.versions }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Fetch matching versions
+        id: versions
+        env:
+          MIN_VERSION: ${{ github.event.inputs.minimum_version }}
+          MAX_COUNT: ${{ github.event.inputs.max_count }}
+        run: |
+          versions="$(./scripts/list-php-versions.sh)"
+          echo "versions=${versions}" >> "$GITHUB_OUTPUT"
+          echo "Versions: ${versions}"
+
+  release:
+    name: Release PHP ${{ matrix.version }}
+    needs: list-versions
+    if: needs.list-versions.outputs.versions != '[]'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(needs.list-versions.outputs.versions) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ matrix.version }}
+        run: ./scripts/release-php.sh

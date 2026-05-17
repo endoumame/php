@@ -1,0 +1,63 @@
+name: Revert PHP Releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      minimum_version:
+        description: Minimum PHP version to delete, for example 8.4.3
+        required: true
+        default: 0.0.0
+        type: string
+      maximum_version:
+        description: Maximum PHP version to delete
+        required: true
+        default: 999.999.999
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  delete-releases:
+    name: Delete PHP releases in range
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Validate and delete releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MIN_VERSION: ${{ github.event.inputs.minimum_version }}
+          MAX_VERSION: ${{ github.event.inputs.maximum_version }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$MIN_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "minimum_version must be in x.y.z format: $MIN_VERSION" >&2
+            exit 1
+          fi
+
+          if [[ ! "$MAX_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "maximum_version must be in x.y.z format: $MAX_VERSION" >&2
+            exit 1
+          fi
+
+          gh release list --limit 1000 --json tagName --jq '.[].tagName' |
+            sed -n 's/^v\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)$/\1/p' |
+            sort -V |
+            while IFS= read -r version; do
+              if [[ "$(printf '%s\n%s\n' "$MIN_VERSION" "$version" | sort -V | head -n1)" != "$MIN_VERSION" ]]; then
+                continue
+              fi
+
+              if [[ "$(printf '%s\n%s\n' "$version" "$MAX_VERSION" | sort -V | tail -n1)" != "$MAX_VERSION" ]]; then
+                continue
+              fi
+
+              echo "Deleting v${version}"
+              gh release delete "v${version}" --cleanup-tag --yes
+            done
