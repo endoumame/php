@@ -10,6 +10,8 @@ if ! command -v php >/dev/null 2>&1; then
   exit 1
 fi
 
+php_bin="$(command -v php)"
+
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
@@ -24,7 +26,7 @@ curl --fail --silent --show-error --location \
   --output "$expected_signature" \
   "https://composer.github.io/installer.sig"
 
-actual_signature="$(php -r "echo hash_file('sha384', '$installer');")"
+actual_signature="$("$php_bin" -r "echo hash_file('sha384', '$installer');")"
 expected_signature_value="$(cat "$expected_signature")"
 
 if [[ "$actual_signature" != "$expected_signature_value" ]]; then
@@ -43,13 +45,13 @@ fi
 export COMPOSER_HOME="$composer_home"
 
 if [[ ! -w "$install_dir" ]]; then
-  sudo php "$installer" \
+  sudo "$php_bin" "$installer" \
     --install-dir="$install_dir" \
     --filename="$filename"
 else
-  php "$installer" \
+  "$php_bin" "$installer" \
     --install-dir="$install_dir" \
     --filename="$filename"
 fi
 
-"$install_dir/$filename" --version
+"$php_bin" "$install_dir/$filename" --version
