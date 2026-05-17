@@ -34,6 +34,7 @@ This repository is compatible with the `mise` GitHub backend.
 Set `endoumame/php` as the `php` tool alias:
 
 ```bash
+mise plugin rm php
 mise config set tool_alias.php github:endoumame/php
 ```
 
