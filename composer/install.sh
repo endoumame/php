@@ -44,14 +44,17 @@ fi
 
 export COMPOSER_HOME="$composer_home"
 
+staging_dir="$tmp_dir/install"
+mkdir -p "$staging_dir"
+
+"$php_bin" "$installer" \
+  --install-dir="$staging_dir" \
+  --filename="$filename"
+
 if [[ ! -w "$install_dir" ]]; then
-  sudo "$php_bin" "$installer" \
-    --install-dir="$install_dir" \
-    --filename="$filename"
+  sudo install -m 0755 "$staging_dir/$filename" "$install_dir/$filename"
 else
-  "$php_bin" "$installer" \
-    --install-dir="$install_dir" \
-    --filename="$filename"
+  install -m 0755 "$staging_dir/$filename" "$install_dir/$filename"
 fi
 
 "$php_bin" "$install_dir/$filename" --version
