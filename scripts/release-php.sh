@@ -20,7 +20,8 @@ rm -rf "$download_dir"
 mkdir -p "$download_dir"
 
 matching_paths="$(mktemp)"
-trap 'rm -f "$matching_paths"' EXIT
+body_file=""
+trap 'rm -f "$matching_paths" "$body_file"' EXIT
 
 for endpoint in \
   "https://dl.static-php.dev/static-php-cli/bulk/?format=json" \
@@ -46,7 +47,7 @@ while IFS= read -r filepath; do
 
   output="${download_dir}/php-${version}-cli-${arch}.${extension}"
   echo "Downloading ${filename} -> $(basename "$output")"
-  curl --fail --show-error --location --output "$output" "https://dl.static-php.dev/${filepath}"
+  curl --fail --show-error --location --output "$output" "https://dl.static-php.dev${filepath}"
 done < "$matching_paths"
 
 asset_count="$(find "$download_dir" -type f \( -name '*.tar.gz' -o -name '*.zip' \) | wc -l | tr -d ' ')"
@@ -62,7 +63,6 @@ fi
 
 major="${version%%.*}"
 body_file="$(mktemp)"
-trap 'rm -f "$matching_paths" "$body_file"' EXIT
 cat > "$body_file" <<EOF
 # PHP ${tag}
 
