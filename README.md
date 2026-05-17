@@ -57,6 +57,27 @@ Without an alias, use the full backend reference:
 mise use github:endoumame/php@8.2.30
 ```
 
+## Install Composer
+
+Composer can be installed after PHP is available on `PATH`.
+
+Linux and macOS:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/endoumame/php/main/composer/install.sh)
+composer --version
+```
+
+Windows PowerShell:
+
+```powershell
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/endoumame/php/main/composer/install.ps1'))
+composer --version
+```
+
+The installer script verifies the official Composer installer SHA-384 signature
+before running it.
+
 ## Release manually
 
 Open the repository's Actions tab, choose `PHP Release`, and enter a version:
