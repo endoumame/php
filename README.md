@@ -27,6 +27,35 @@ The workflows are designed for recent GitHub Actions supply-chain incidents:
 
 See [SECURITY.md](SECURITY.md) for operating notes.
 
+## Install with mise
+
+This repository is compatible with the `mise` GitHub backend.
+
+Set `endoumame/php` as the `php` tool alias:
+
+```bash
+mise config set tool_alias.php github:endoumame/php
+```
+
+Install and use a specific PHP release:
+
+```bash
+mise use php@8.2.30
+php --version
+```
+
+Use the latest available release:
+
+```bash
+mise use php@latest
+```
+
+Without an alias, use the full backend reference:
+
+```bash
+mise use github:endoumame/php@8.2.30
+```
+
 ## Release manually
 
 Open the repository's Actions tab, choose `PHP Release`, and enter a version:
