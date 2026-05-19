@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -z "${ASDF_INSTALL_VERSION:-}" || -z "${ASDF_INSTALL_PATH:-}" ]]; then
+  echo "ASDF_INSTALL_VERSION and ASDF_INSTALL_PATH are required" >&2
+  exit 1
+fi
+
+version="${ASDF_INSTALL_VERSION}"
+os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+arch="$(uname -m)"
+
+case "$arch" in
+  x86_64|amd64) arch="x86_64" ;;
+  aarch64|arm64) arch="aarch64" ;;
+  *)
+    echo "Unsupported architecture: $arch" >&2
+    exit 1
+    ;;
+esac
+
+case "$os" in
+  linux) ext="tar.gz" ;;
+  darwin) ext="tar.gz" ;;
+  mingw*|msys*|cygwin*) os="windows"; ext="zip" ;;
+  *)
+    echo "Unsupported OS: $os" >&2
+    exit 1
+    ;;
+esac
+
+release_json="$(curl -fsSL "https://api.github.com/repos/endoumame/php/releases/tags/v${version}")"
+asset_url="$({
+  echo "$release_json" | jq -r --arg os "$os" --arg arch "$arch" --arg ext "$ext" '
+    .assets[]?.browser_download_url
+    | select(test("php-" + $ENV.ASDF_INSTALL_VERSION + "-cli-"; "i"))
+    | select(test($os; "i"))
+    | select(test($arch; "i"))
+    | select(endswith($ext))
+  ' | head -n1
+})"
+
+if [[ -z "$asset_url" ]]; then
+  echo "Could not find a matching release asset for version=$version os=$os arch=$arch" >&2
+  exit 1
+fi
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+archive="$tmpdir/archive.$ext"
+
+curl -fL "$asset_url" -o "$archive"
+mkdir -p "$ASDF_INSTALL_PATH"
+
+if [[ "$ext" == "zip" ]]; then
+  unzip -q "$archive" -d "$ASDF_INSTALL_PATH"
+else
+  tar -xzf "$archive" -C "$ASDF_INSTALL_PATH"
+fi
+
+if [[ ! -x "$ASDF_INSTALL_PATH/bin/php" ]]; then
+  if [[ -x "$ASDF_INSTALL_PATH/php" ]]; then
+    mkdir -p "$ASDF_INSTALL_PATH/bin"
+    mv "$ASDF_INSTALL_PATH/php" "$ASDF_INSTALL_PATH/bin/php"
+  else
+    found_php="$(find "$ASDF_INSTALL_PATH" -type f -name php | head -n1 || true)"
+    if [[ -n "$found_php" ]]; then
+      mkdir -p "$ASDF_INSTALL_PATH/bin"
+      mv "$found_php" "$ASDF_INSTALL_PATH/bin/php"
+      chmod +x "$ASDF_INSTALL_PATH/bin/php"
+    fi
+  fi
+fi
+
+if [[ ! -x "$ASDF_INSTALL_PATH/bin/php" ]]; then
+  echo "php binary not found after installation" >&2
+  exit 1
+fi

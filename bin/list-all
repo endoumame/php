@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+curl -fsSL "https://api.github.com/repos/endoumame/php/tags?per_page=100" \
+  | jq -r '.[].name' \
+  | sed -E 's/^v//' \
+  | awk '/^[0-9]+\.[0-9]+\.[0-9]+$/'
