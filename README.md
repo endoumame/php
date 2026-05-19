@@ -29,18 +29,19 @@ See [SECURITY.md](SECURITY.md) for operating notes.
 
 ## Install with mise
 
-This repository is compatible with the `mise` GitHub backend.
+This repository includes an asdf-compatible plugin, so you can add it directly:
 
-Set `endoumame/php` as the `php` tool alias:
+```bash
+mise plugin add php https://github.com/endoumame/php
+mise use php@8.2.30
+php --version
+```
+
+If you prefer the GitHub backend, this alias-based setup also works:
 
 ```bash
 mise plugin rm php
 mise config set tool_alias.php github:endoumame/php
-```
-
-Install and use a specific PHP release:
-
-```bash
 mise use php@8.2.30
 php --version
 ```
